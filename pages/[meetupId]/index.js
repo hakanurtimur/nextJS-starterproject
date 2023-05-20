@@ -1,14 +1,64 @@
+import { MongoClient, ObjectId } from "mongodb";
 import MeetupDetail from "../../components/meetups/MeetupDetail";
 
-function MeetupDetailsPage() {
+function MeetupDetailsPage(props) {
   return (
     <MeetupDetail
-      image="https://i.guim.co.uk/img/media/58af1d727d8a51dcb0b6eb45c460aa35a200fc49/0_83_6000_3600/master/6000.jpg?width=1200&height=900&quality=85&auto=format&fit=crop&s=bc077111ffb85838d2cae9a845059025"
-      description="Some description"
-      title="First meetup"
-      address="Some address some street"
+      image={props.meetupData.image}
+      title={props.meetupData.title}
+      description={props.meetupData.description}
+      address={props.meetupData.address}
     />
   );
-};
+}
 
 export default MeetupDetailsPage;
+
+export async function getStaticPaths() {
+  const client = await MongoClient.connect(
+    "mongodb+srv://hakanurtimur:34350q@cluster0.9ouy84u.mongodb.net/meetups?retryWrites=true&w=majority"
+  ); // şifre ve kullnıcı adı
+
+  const db = client.db();
+
+  const meetupsCollection = db.collection("meetups");
+
+  const meetups = await meetupsCollection.find({}, { _id: 1 }).toArray();
+
+  client.close();
+
+  return {
+    fallback: false,
+    paths: meetups.map((meetup) => ({
+      params: { meetupId: meetup._id.toString() },
+    })),
+  };
+}
+
+export async function getStaticProps(context) {
+  const meetupId = context.params.meetupId;
+
+  const client = await MongoClient.connect(
+    "mongodb+srv://hakanurtimur:34350q@cluster0.9ouy84u.mongodb.net/meetups?retryWrites=true&w=majority"
+  ); // şifre ve kullnıcı adı
+
+  const db = client.db();
+
+  const meetupsCollection = db.collection("meetups");
+
+  const meetup = await meetupsCollection.findOne({ _id: new ObjectId(meetupId)});
+
+  client.close();
+
+  return {
+    props: {
+      meetupData: {
+        image: meetup.image,
+        title: meetup.title,
+        description: meetup.description,
+        address: meetup.address,
+        id: meetup._id.toString()
+      },
+    },
+  };
+}

@@ -1,27 +1,8 @@
 import React, { useEffect, useState } from "react";
 import MeetupList from "../components/meetups/MeetupList";
-import { img } from "../components/img";
+import { MongoClient } from "mongodb";
 
-const DUMMY_MEETUPS = [
-  {
-    id: "m1",
-    title: "First meetup",
-    address: "Some address 3. street.",
-    image: img,
-  },
-  {
-    id: "m2",
-    title: "First meetup",
-    address: "Some address 4. street.",
-    image: img,
-  },
-  {
-    id: "m3",
-    title: "First meetup",
-    address: "Some address 5. street.",
-    image: img,
-  },
-];
+
 export default function HomePage(props) {
   return <MeetupList meetups={props.meetups} />;
 }
@@ -42,9 +23,26 @@ export default function HomePage(props) {
 
 
 export async function getStaticProps() {
+
+    const client = await MongoClient.connect('mongodb+srv://hakanurtimur:34350q@cluster0.9ouy84u.mongodb.net/meetups?retryWrites=true&w=majority'); // şifre ve kullnıcı adı
+
+
+    const db = client.db()
+
+    const meetupsCollection =  db.collection('meetups')
+
+    const meetups = await meetupsCollection.find().toArray()
+
+    client.close
   return {
     props: {
-      meetups: DUMMY_MEETUPS,
+      meetups: meetups.map(meetup => ({
+        id: meetup._id.toString(),
+        title: meetup.title,
+        image: meetup.image,
+        address: meetup.address
+
+      }))
     },
     revalidate: 3600,
   };
